@@ -121,15 +121,21 @@ static unsigned int createShaderProgram(const std::string& vertexShaderFile,
 struct gl_context {
     unsigned int shaderProgram;
     unsigned int VAO;
+    unsigned int EBO;
 };
 
 static gl_context prepare_context()
 {
-    // Vertices in normalized coordinates of a triangle
+    // data for a rectangle composed from 2 triangles
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f
+         0.5f,  0.5f, 0.0f,  // top right
+         0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,  // bottom left
+        -0.5f,  0.5f, 0.0f   // top left 
+    };
+    unsigned int indices[] = {  // note that we start from 0!
+        0, 1, 3,                // first triangle
+        1, 2, 3                 // second triangle
     };  
  
     // Create vertex array object which stores:
@@ -145,6 +151,13 @@ static gl_context prepare_context()
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Create Element Buffer Object and store vertices and indices into it
+    unsigned int EBO;
+    glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
+    
 
     // Create shaders
     unsigned int shaderProgram = createShaderProgram("res/shader1.vs",
@@ -162,6 +175,7 @@ static gl_context prepare_context()
     gl_context result;
     result.shaderProgram = shaderProgram;
     result.VAO = VAO;
+    result.EBO = EBO;
     return result;
 }
 
@@ -169,7 +183,9 @@ static void draw(gl_context* context)
 {
     glUseProgram(context->shaderProgram);
     glBindVertexArray(context->VAO);
-    glDrawArrays(GL_TRIANGLES, 0 /* starting index*/, 3 /* how many vertices to draw */);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);    /* Wireframe rendering */
+    glDrawElements(GL_TRIANGLES, 6 /* Number of indices */, GL_UNSIGNED_INT, 0 /* offset */);
+    glBindVertexArray(0);
 }
 
 int main()
