@@ -120,55 +120,38 @@ static unsigned int createShaderProgram(const std::string& vertexShaderFile,
 // Prepare context for drawing on screen
 struct gl_context {
     unsigned int shaderProgram;
-    unsigned int VAO;
+    unsigned int VAO[2];
     unsigned int EBO;
 };
 
 static gl_context prepare_context()
 {
     // data for 2 triangles next to each other
-    float vertices[] = {
+    float vertices0[] = {
         -0.25f,     0.25f,      0.0f,
         0.0f,       -0.25f,     0.0f,
         -0.5f,      -0.25f,     0.0f,
-
+    };
+    float vertices1[] = {
         0.25f,      0.25f,      0.0f,
         0.5f,       -0.25f,     0.0f,
         0.0f,       -0.25f,     0.0f,
-
     };
-    unsigned int indices[] = {  // note that we start from 0!
-        0, 1, 3,                // first triangle
-        1, 2, 3                 // second triangle
-    };  
- 
-    // Create vertex array object which stores:
-    // calls to glEnableVertexAttribArray
-    // vertex attribute configurations glVertexAttribPointer
-    // VBO glVertexAttribPointer
-    unsigned int VAO; 
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
 
-    // Create Vertex Buffer Object and store our vertices into it
-    unsigned int VBO;
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    // Create 2 VAO for the two triangles
+    unsigned int VAO[2]; 
+    glGenVertexArrays(2, VAO);
 
-    // Create Element Buffer Object and store vertices and indices into it
-    unsigned int EBO = 0;
-#if 0
-    glGenBuffers(1, &EBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
-#endif
+    // Create 2 VBO for the 2 datasets
+    unsigned int VBO[2];
+    glGenBuffers(2, VBO);
 
-    // Create shaders
-    unsigned int shaderProgram = createShaderProgram("res/shader1.vs",
-                                                     "res/shader1.fs");
+    // Triangle 0, buffer
+    glBindVertexArray(VAO[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices0), vertices0, GL_STATIC_DRAW);
 
-    // Specify vertex data attributes
+    // Triangle 0, vertex data attributes
     glVertexAttribPointer(0,                    /* index (in the vertex shader source, position=0) */
                           3,                    /* size of vertex attribute */ 
                           GL_FLOAT,             /* type */
@@ -177,23 +160,42 @@ static gl_context prepare_context()
                           (void*)0);            /* starting position */
     glEnableVertexAttribArray(0);               /* enable attribute at location 0 */
 
+    // Triangle 1, buffer
+    glBindVertexArray(VAO[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices1), vertices1, GL_STATIC_DRAW);
+
+    // Triangle 2, verted data attributes
+    glVertexAttribPointer(0,                    /* index (in the vertex shader source, position=0) */
+                          3,                    /* size of vertex attribute */ 
+                          GL_FLOAT,             /* type */
+                          GL_FALSE,             /* do not normalize */
+                          3 * sizeof(float),    /* space between consecutive vertex attribute sets */
+                          (void*)0);            /* starting position */
+    glEnableVertexAttribArray(0);               /* enable attribute at location 0 */
+ 
+    // Create shaders
+    unsigned int shaderProgram = createShaderProgram("res/shader1.vs",
+                                                     "res/shader1.fs");
+
+    // Return results
     gl_context result;
     result.shaderProgram = shaderProgram;
-    result.VAO = VAO;
-    result.EBO = EBO;
+    memcpy(result.VAO, VAO, sizeof(result.VAO));
+    result.EBO = 0;
     return result;
 }
 
 static void draw(gl_context* context)
 {
     glUseProgram(context->shaderProgram);
-    glBindVertexArray(context->VAO);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);    /* Wireframe rendering */
-#if 0
-    glDrawElements(GL_TRIANGLES, 6 /* Number of indices */, GL_UNSIGNED_INT, 0 /* offset */);
-#else
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-#endif
+
+    glBindVertexArray(context->VAO[0]);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    glBindVertexArray(context->VAO[1]);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
     glBindVertexArray(0);
 }
 
