@@ -119,9 +119,8 @@ static unsigned int createShaderProgram(const std::string& vertexShaderFile,
 
 // Prepare context for drawing on screen
 struct gl_context {
-    unsigned int shaderProgram;
+    unsigned int program[2];
     unsigned int VAO[2];
-    unsigned int EBO;
 };
 
 static gl_context prepare_context()
@@ -175,28 +174,31 @@ static gl_context prepare_context()
     glEnableVertexAttribArray(0);               /* enable attribute at location 0 */
  
     // Create shaders
-    unsigned int shaderProgram = createShaderProgram("res/shader1.vs",
-                                                     "res/shader1.fs");
+    unsigned int program[2];
+    program[0] = createShaderProgram("res/shader1.vs",
+                                     "res/shader1.fs");
+    program[1] = createShaderProgram("res/shader1.vs",
+                                     "res/shader2.fs");
 
     // Return results
     gl_context result;
-    result.shaderProgram = shaderProgram;
+    memcpy(result.program, program, sizeof(result.program));
     memcpy(result.VAO, VAO, sizeof(result.VAO));
-    result.EBO = 0;
     return result;
 }
 
 static void draw(gl_context* context)
 {
-    glUseProgram(context->shaderProgram);
-
+    glUseProgram(context->program[0]);
     glBindVertexArray(context->VAO[0]);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
+    glUseProgram(context->program[1]);
     glBindVertexArray(context->VAO[1]);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glBindVertexArray(0);
+    glUseProgram(0);
 }
 
 int main()
