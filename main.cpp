@@ -126,12 +126,16 @@ struct gl_context {
 
 static gl_context prepare_context()
 {
-    // data for a rectangle composed from 2 triangles
+    // data for 2 triangles next to each other
     float vertices[] = {
-         0.5f,  0.5f, 0.0f,  // top right
-         0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f,  // bottom left
-        -0.5f,  0.5f, 0.0f   // top left 
+        -0.25f,     0.25f,      0.0f,
+        0.0f,       -0.25f,     0.0f,
+        -0.5f,      -0.25f,     0.0f,
+
+        0.25f,      0.25f,      0.0f,
+        0.5f,       -0.25f,     0.0f,
+        0.0f,       -0.25f,     0.0f,
+
     };
     unsigned int indices[] = {  // note that we start from 0!
         0, 1, 3,                // first triangle
@@ -153,11 +157,12 @@ static gl_context prepare_context()
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // Create Element Buffer Object and store vertices and indices into it
-    unsigned int EBO;
+    unsigned int EBO = 0;
+#if 0
     glGenBuffers(1, &EBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
-    
+#endif
 
     // Create shaders
     unsigned int shaderProgram = createShaderProgram("res/shader1.vs",
@@ -184,7 +189,11 @@ static void draw(gl_context* context)
     glUseProgram(context->shaderProgram);
     glBindVertexArray(context->VAO);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);    /* Wireframe rendering */
+#if 0
     glDrawElements(GL_TRIANGLES, 6 /* Number of indices */, GL_UNSIGNED_INT, 0 /* offset */);
+#else
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+#endif
     glBindVertexArray(0);
 }
 
