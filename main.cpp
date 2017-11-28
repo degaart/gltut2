@@ -4,9 +4,11 @@
 #include <cstdio>
 #include <cmath>
 #include <memory>
+#include <fmt/format.h>
 #include "stb_image.h"
 #include "shader.h"
 #include "exception.h"
+#include "image.h"
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
@@ -31,7 +33,7 @@ static void processInput(GLFWwindow *window)
 struct gl_context {
     std::shared_ptr<Shader> program;
     unsigned int VAO;
-    unsigned int texture;
+    unsigned int textures[2];
 };
 
 static gl_context prepare_context()
@@ -92,41 +94,59 @@ static gl_context prepare_context()
     glEnableVertexAttribArray(2);
 
     // Texture stuffs
+    unsigned int textures[2];
+    glGenTextures(2, textures);
+
+    Image image0("res/container.jpg");
+    glBindTexture(GL_TEXTURE_2D, textures[0]);
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // x-coord
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // y-coord
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);  // scaling downward
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // scaling upward
 
-    int width, height, nrChannels;
-    unsigned char *data = stbi_load("res/container.jpg", &width, &height, &nrChannels, 0); 
-    if(!data) {
-        throw Exception("Failed to load texture");
-    }
-
-    unsigned int texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    int inputFormat = image0.getChannels() == 3 ? GL_RGB : GL_RGBA;
     glTexImage2D(GL_TEXTURE_2D,
                  0,                 /* mipmap level */
                  GL_RGB,            /* format to store into */
-                 width, height,
+                 image0.getWidth(), image0.getHeight(),
                  0,                 /* unused legacy stuff */
-                 GL_RGB,            /* input format */
+                 inputFormat,            /* input format */
                  GL_UNSIGNED_BYTE,  /* input datatype */
-                 data);
+                 image0.getData());
     glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
+
+    Image image1("res/awesomeface.png", true);
+    glBindTexture(GL_TEXTURE_2D, textures[1]);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // x-coord
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // y-coord
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);  // scaling downward
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);   // scaling upward
+
+    inputFormat = image1.getChannels() == 3 ? GL_RGB : GL_RGBA;
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,                 /* mipmap level */
+                 GL_RGB,            /* format to store into */
+                 image1.getWidth(), image1.getHeight(),
+                 0,                 /* unused legacy stuff */
+                 inputFormat,            /* input format */
+                 GL_UNSIGNED_BYTE,  /* input datatype */
+                 image1.getData());
+    glGenerateMipmap(GL_TEXTURE_2D);
+
 
     // Create shaders
-    auto shader = std::make_shared<Shader>("res/shader4.vs", 
-                                           "res/shader4.fs");
+    auto shader = std::make_shared<Shader>("res/shader.vs", 
+                                           "res/shader.fs");
 
     // Return results
     gl_context result;
     result.program = shader;
     result.VAO = VAO;
-    result.texture = texture;
+    memcpy(result.textures, textures, sizeof(result.textures));
     return result;
 }
 
@@ -134,9 +154,17 @@ static void draw(gl_context* context, float ticks)
 {
     context->program->use();
     context->program->setFloat("off", sin(ticks) / 2.0f);
+    context->program->setInt("texture1", 0);
+    context->program->setInt("texture2", 1);
 
     glBindVertexArray(context->VAO);
-    glBindTexture(GL_TEXTURE_2D, context->texture);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, context->textures[0]);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, context->textures[1]);
+
     //glDrawArrays(GL_TRIANGLES, 0, 3);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 

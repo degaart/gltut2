@@ -4,7 +4,7 @@
 PROGRAM := gltut
 PREFIX := $(HOME)/Desktop/gltut
 CFLAGS := $(CFLAGS) -g -I$(PREFIX)/include -std=gnu99
-CXXFLAGS := $(CXXFLAGS) -g -I$(PREFIX)/include -std=gnu++14
+CXXFLAGS := $(CXXFLAGS) -g -I$(PREFIX)/include -I./fmt -std=gnu++14
 LDFLAGS := $(LDFLAGS) -g -L$(PREFIX)/lib \
 	-framework Cocoa -framework IOKit -framework CoreFoundation -framework CoreVideo \
 	-lglfw3
