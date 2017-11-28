@@ -4,11 +4,11 @@
 
 out vec4 FragColor; /* Output of fragment shader */
 
-uniform vec4 ourColor;  /* Set from opengl code */
+in vec3 ourColor;
 
 void main()
 {
-    FragColor = ourColor;
+    FragColor = vec4(ourColor, 1.0);
 } 
 
 

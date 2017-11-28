@@ -120,71 +120,60 @@ static unsigned int createShaderProgram(const std::string& vertexShaderFile,
 
 // Prepare context for drawing on screen
 struct gl_context {
-    unsigned int program[2];
-    unsigned int VAO[2];
+    unsigned int program;
+    unsigned int VAO;
 };
 
 static gl_context prepare_context()
 {
     // data for 2 triangles next to each other
-    float vertices0[] = {
-        -0.25f,     0.25f,      0.0f,
-        0.0f,       -0.25f,     0.0f,
-        -0.5f,      -0.25f,     0.0f,
-    };
-    float vertices1[] = {
-        0.25f,      0.25f,      0.0f,
-        0.5f,       -0.25f,     0.0f,
-        0.0f,       -0.25f,     0.0f,
-    };
+    float vertices[] = {
+        // positions         // colors
+        0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
+        0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
+    };    
 
     // Create 2 VAO for the two triangles
-    unsigned int VAO[2]; 
-    glGenVertexArrays(2, VAO);
+    unsigned int VAO; 
+    glGenVertexArrays(1, &VAO);
 
     // Create 2 VBO for the 2 datasets
-    unsigned int VBO[2];
-    glGenBuffers(2, VBO);
+    unsigned int VBO;
+    glGenBuffers(1, &VBO);
 
     // Triangle 0, buffer
-    glBindVertexArray(VAO[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[0]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices0), vertices0, GL_STATIC_DRAW);
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // Triangle 0, vertex data attributes
+    // Vertex position attributes
     glVertexAttribPointer(0,                    /* index (in the vertex shader source, position=0) */
                           3,                    /* size of vertex attribute */ 
                           GL_FLOAT,             /* type */
                           GL_FALSE,             /* do not normalize */
-                          3 * sizeof(float),    /* space between consecutive vertex attribute sets */
+                          6 * sizeof(float),    /* space between consecutive vertex attribute sets */
                           (void*)0);            /* starting position */
     glEnableVertexAttribArray(0);               /* enable attribute at location 0 */
 
-    // Triangle 1, buffer
-    glBindVertexArray(VAO[1]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[1]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices1), vertices1, GL_STATIC_DRAW);
+    // Vertex color attribute
+    glVertexAttribPointer(1,
+                          3,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          6 * sizeof(float),
+                          (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
-    // Triangle 2, verted data attributes
-    glVertexAttribPointer(0,                    /* index (in the vertex shader source, position=0) */
-                          3,                    /* size of vertex attribute */ 
-                          GL_FLOAT,             /* type */
-                          GL_FALSE,             /* do not normalize */
-                          3 * sizeof(float),    /* space between consecutive vertex attribute sets */
-                          (void*)0);            /* starting position */
-    glEnableVertexAttribArray(0);               /* enable attribute at location 0 */
- 
     // Create shaders
-    unsigned int program[2];
-    program[0] = createShaderProgram("res/shader3.vs",
-                                     "res/shader3.fs");
-    program[1] = createShaderProgram("res/shader3.vs",
-                                     "res/shader3.fs");
+    unsigned int program;
+    program = createShaderProgram("res/shader3.vs",
+                                  "res/shader3.fs");
 
     // Return results
     gl_context result;
-    memcpy(result.program, program, sizeof(result.program));
-    memcpy(result.VAO, VAO, sizeof(result.VAO));
+    result.program = program;
+    result.VAO = VAO;
     return result;
 }
 
@@ -192,19 +181,13 @@ static void draw(gl_context* context, float ticks)
 {
 
     float greenValue = (sin(ticks) / 2.0f) + 0.5f;
-    int vertexColorLocation = glGetUniformLocation(context->program[0], "ourColor");
+    int vertexColorLocation = glGetUniformLocation(context->program, "ourColor");
 
-    glUseProgram(context->program[0]);
+    glUseProgram(context->program);
     glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 
-    glBindVertexArray(context->VAO[0]);
+    glBindVertexArray(context->VAO);
     glDrawArrays(GL_TRIANGLES, 0, 3);
-
-#if 0
-    glUseProgram(context->program[1]);
-    glBindVertexArray(context->VAO[1]);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-#endif
 
     glBindVertexArray(0);
     glUseProgram(0);
