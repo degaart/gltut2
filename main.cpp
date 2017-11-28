@@ -38,7 +38,7 @@ static gl_context prepare_context()
         0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
         -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
         0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
-    };    
+    };
 
     // Create 2 VAO for the two triangles
     unsigned int VAO; 
@@ -84,6 +84,7 @@ static gl_context prepare_context()
 static void draw(gl_context* context, float ticks)
 {
     context->program->use();
+    context->program->setFloat("off", sin(ticks) / 2.0f);
 
     glBindVertexArray(context->VAO);
     glDrawArrays(GL_TRIANGLES, 0, 3);
