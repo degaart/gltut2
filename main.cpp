@@ -129,7 +129,7 @@ static gl_context prepare_context()
     inputFormat = image1.getChannels() == 3 ? GL_RGB : GL_RGBA;
     glTexImage2D(GL_TEXTURE_2D,
                  0,                 /* mipmap level */
-                 GL_RGB,            /* format to store into */
+                 inputFormat,            /* format to store into */
                  image1.getWidth(), image1.getHeight(),
                  0,                 /* unused legacy stuff */
                  inputFormat,            /* input format */
@@ -156,6 +156,7 @@ static void draw(gl_context* context, float ticks)
     context->program->setFloat("off", sin(ticks) / 2.0f);
     context->program->setInt("texture1", 0);
     context->program->setInt("texture2", 1);
+    context->program->setFloat("texMix", 0.5 + (cos(ticks) / 2.0));
 
     glBindVertexArray(context->VAO);
 
