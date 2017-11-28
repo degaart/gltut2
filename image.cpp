@@ -1,7 +1,7 @@
 #include "image.h"
 #include "stb_image.h"
 #include "exception.h"
-#include <sstream>
+#include <fmt/printf.h>
 
 Image::Image(std::string filename, bool flip):
     _filename(filename)
@@ -14,12 +14,7 @@ Image::Image(std::string filename, bool flip):
                                     &nrChannels, 
                                     0); 
     if(!data) {
-        std::stringstream msg;
-        msg << "Failed to load image \""
-            << filename
-            << "\"";
-
-        throw Exception(msg.str());
+        throw Exception(fmt::format("Failed to load image\"{}\"", filename));
     }
 
     _width = width;

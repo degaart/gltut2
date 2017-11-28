@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <glad/glad.h>
+#include <fmt/format.h>
 
 static std::string readFile(const std::string& filename)
 {
@@ -49,14 +50,11 @@ static unsigned int compileShader(GLenum type, const std::string& filename)
                 break;
         }
 
-        std::stringstream smsg;
-        smsg << "Error compiling " 
-             << stype 
-             << " from \"" 
-             << filename
-             << "\": "
-             << msg;
-        throw Exception(smsg.str());
+        std::string smsg = fmt::format("Error compiling {} from \"{}\": {}",
+                                       stype,
+                                       filename,
+                                       msg);
+        throw Exception(smsg);
     }
 
     return shader;
@@ -79,12 +77,10 @@ Shader::Shader(std::string vertexShaderFile, std::string fragmentShaderFile)
         char msg[512];
         glGetProgramInfoLog(shaderProgram, sizeof(msg), NULL, msg);
 
-        std::stringstream smsg;
-        smsg << "Error linking shader program from \""
-             << vertexShaderFile << "\" and \""
-             << fragmentShaderFile << "\": "
-             << msg;
-        throw Exception(smsg.str());
+        auto smsg = fmt::format("Error linking shader program from \"{}\" and \"{}\": {}",
+                                vertexShaderFile, fragmentShaderFile,
+                                msg);
+        throw Exception(smsg);
     }
 
     // Shaders can be deleted once they are linked into the program

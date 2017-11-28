@@ -1,4 +1,4 @@
-.PHONY: all clean
+.PHONY: all clean run
 .SUFFIXES:
 
 PROGRAM := gltut
@@ -10,12 +10,13 @@ LDFLAGS := $(LDFLAGS) -g -L$(PREFIX)/lib \
 	-lglfw3
 
 CXX_SRCS := $(wildcard *.cpp)
+CC_SRCS := $(wildcard fmt/fmt/*.cc)
 C_SRCS := $(wildcard *.c)
-HDRS := $(wildcard *.h)
 CXX_OBJS := $(patsubst %.cpp,obj/%.cpp.o,$(CXX_SRCS))
+CC_OBJS := $(patsubst fmt/fmt/%.cc,obj/%.cc.o,$(CC_SRCS))
 C_OBJS := $(patsubst %.c,obj/%.c.o,$(C_SRCS))
 SRCS := $(CXX_SRCS) $(C_SRCS)
-OBJS := $(CXX_OBJS) $(C_OBJS)
+OBJS := $(CXX_OBJS) $(CC_OBJS) $(C_OBJS)
 
 all: obj obj/Depends.mk obj/$(PROGRAM)
 
@@ -33,8 +34,14 @@ obj/$(PROGRAM): $(OBJS)
 obj/%.cpp.o:
 	c++ -c -o $@ $(CXXFLAGS) $*.cpp
 
+obj/%.cc.o:
+	c++ -c -o $@ $(CXXFLAGS) fmt/fmt/$*.cc
+
 obj/%.c.o:
 	cc -c -o $@ $(CFLAGS) $*.c
+
+run: all
+	obj/gltut
 
 clean:
 	rm -rf obj
