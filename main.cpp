@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <cstdio>
+#include <cmath>
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
@@ -187,15 +188,23 @@ static gl_context prepare_context()
     return result;
 }
 
-static void draw(gl_context* context)
+static void draw(gl_context* context, float ticks)
 {
+
+    float greenValue = (sin(ticks) / 2.0f) + 0.5f;
+    int vertexColorLocation = glGetUniformLocation(context->program[0], "ourColor");
+
     glUseProgram(context->program[0]);
+    glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
     glBindVertexArray(context->VAO[0]);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
+#if 0
     glUseProgram(context->program[1]);
     glBindVertexArray(context->VAO[1]);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+#endif
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -236,12 +245,14 @@ int main()
 
     // Event loop
     while(!glfwWindowShouldClose(window)) {
+        float ticks = glfwGetTime();
+
         processInput(window);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        draw(&context);
+        draw(&context, ticks);
 
         glfwSwapBuffers(window);
         glfwPollEvents();    

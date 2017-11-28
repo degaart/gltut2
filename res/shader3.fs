@@ -4,12 +4,11 @@
 
 out vec4 FragColor; /* Output of fragment shader */
 
-in vec4 vertexColor; /* Input variable from vertex shader */
-
+uniform vec4 ourColor;  /* Set from opengl code */
 
 void main()
 {
-    FragColor = vertexColor;
+    FragColor = ourColor;
 } 
 
 
