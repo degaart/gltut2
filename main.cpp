@@ -175,10 +175,10 @@ static gl_context prepare_context()
  
     // Create shaders
     unsigned int program[2];
-    program[0] = createShaderProgram("res/shader1.vs",
-                                     "res/shader1.fs");
-    program[1] = createShaderProgram("res/shader1.vs",
-                                     "res/shader2.fs");
+    program[0] = createShaderProgram("res/shader3.vs",
+                                     "res/shader3.fs");
+    program[1] = createShaderProgram("res/shader3.vs",
+                                     "res/shader3.fs");
 
     // Return results
     gl_context result;
