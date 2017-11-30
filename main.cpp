@@ -15,8 +15,8 @@
 #include "exception.h"
 #include "image.h"
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
+static int windowWidth = 800;
+static int windowHeight = 600;
 
 #define BUFFER_OBJECT(i) ((void*)(i))
 
@@ -27,6 +27,8 @@
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+    windowWidth = width;
+    windowHeight = height;
 }
 
 // Process inputs
@@ -259,7 +261,7 @@ static void draw(gl_context* context, float ticks)
     auto nearPlane = 0.1f;
     auto farPlane = 100.0f;
     auto projection = glm::perspective(glm::radians(45.0f), 
-                                       (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 
+                                       (float)windowWidth / (float)windowHeight, 
                                        nearPlane, 
                                        farPlane);
     context->program->setMatrix("projection", projection);
@@ -298,7 +300,7 @@ int main()
 #endif
 
     // Create glfw window
-    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "gltut", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "gltut", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -313,7 +315,7 @@ int main()
     }    
 
     // Set viewport
-    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glViewport(0, 0, windowWidth, windowHeight);
 
     // tell it to call a callback when window is resized    
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
