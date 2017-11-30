@@ -5,6 +5,11 @@
 #include <cmath>
 #include <memory>
 #include <fmt/format.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include "stb_image.h"
 #include "shader.h"
 #include "exception.h"
@@ -152,11 +157,20 @@ static gl_context prepare_context()
 
 static void draw(gl_context* context, float ticks)
 {
+    // Generate transform matrix
+    glm::mat4 trans(1.0f);
+    trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+    trans = glm::rotate(trans, glm::radians(ticks * 50.0f), glm::vec3(0.0, 0.0, 1.0));
+    //trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+
+    // Init shader
     context->program->use();
     context->program->setFloat("off", sin(ticks) / 2.0f);
     context->program->setInt("texture1", 0);
     context->program->setInt("texture2", 1);
     context->program->setFloat("texMix", 0.5 + (cos(ticks) / 2.0));
+    unsigned int transformLoc = glGetUniformLocation(context->program->getId(), "transform");
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 
     glBindVertexArray(context->VAO);
 
