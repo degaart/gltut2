@@ -20,6 +20,8 @@
 
 #define BUFFER_OBJECT(i) ((void*)(i))
 
+//#define USE_EBO
+
 
 // Callback called when the window is resized
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -94,26 +96,20 @@ static gl_context prepare_context()
 
     unsigned int VAO; 
     glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
 
     unsigned int VBO;
     glGenBuffers(1, &VBO);
-
-#if 0
-    unsigned int EBO;
-    glGenBuffers(1, &EBO);
-#endif
-
-    glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-#if 0
+#if defined(USE_EBO)
+    unsigned int EBO;
+    glGenBuffers(1, &EBO);
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
-#endif
-
-
-#if 0
+    
     // Vertex position attributes
     glVertexAttribPointer(0,                    /* index (in the vertex shader source, position=0) */
                           3,                    /* size of vertex attribute */ 
@@ -140,7 +136,7 @@ static gl_context prepare_context()
                           8 * sizeof(float),
                           BUFFER_OBJECT(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
-#endif
+#else
     // Vertex position attributes
     glVertexAttribPointer(0,                    /* index (in the vertex shader source, position=0) */
                           3,                    /* size of vertex attribute */ 
@@ -158,6 +154,7 @@ static gl_context prepare_context()
                           5 * sizeof(float),
                           BUFFER_OBJECT(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+#endif
 
     // Texture stuffs
     unsigned int textures[2];
@@ -203,10 +200,14 @@ static gl_context prepare_context()
                  image1.getData());
     glGenerateMipmap(GL_TEXTURE_2D);
 
-
     // Create shaders
     auto shader = std::make_shared<Shader>("res/shader.vs", 
                                            "res/shader.fs");
+
+    // Assign textures to shaders
+    shader->use();
+    shader->setInt("texture1", 0);
+    shader->setInt("texture2", 1);
 
     // Enable depth buffer
     glEnable(GL_DEPTH_TEST);
@@ -221,15 +222,38 @@ static gl_context prepare_context()
 
 static void draw(gl_context* context, float ticks)
 {
-    // Model matrix (rotate along the X axis)
-    glm::mat4 model(1.0f);
-    float angle = ticks * glm::radians(50.0f);
-    model = glm::rotate(model, angle, glm::vec3(0.5f, 1.0f, 0.0f));
+    static glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 2.0f,  5.0f, -15.0f), 
+        glm::vec3(-1.5f, -2.2f, -2.5f),  
+        glm::vec3(-3.8f, -2.0f, -12.3f),  
+        glm::vec3( 2.4f, -0.4f, -3.5f),  
+        glm::vec3(-1.7f,  3.0f, -7.5f),  
+        glm::vec3( 1.3f, -2.0f, -2.5f),  
+        glm::vec3( 1.5f,  2.0f, -2.5f), 
+        glm::vec3( 1.5f,  0.2f, -1.5f), 
+        glm::vec3(-1.3f,  1.0f, -1.5f)  
+    };
+
+    // Init shader
+    context->program->use();
+    context->program->setFloat("texMix", 0.5 + (cos(ticks) / 2.0));
+
+    glBindVertexArray(context->VAO);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, context->textures[0]);
+    context->program->setInt("texture1", 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, context->textures[1]);
+    context->program->setInt("texture2", 1);
+
 
     // View matrix (move backwards by translating along Z axis in negative direction)
-    //float position = -3.0f * abs(sin(ticks));
     float position = -3.0f;
     auto view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, position));
+    context->program->setMatrix("view", view);
 
     // Projection matrix (45° fov)
     auto nearPlane = 0.1f;
@@ -238,28 +262,24 @@ static void draw(gl_context* context, float ticks)
                                        (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 
                                        nearPlane, 
                                        farPlane);
-
-    // Init shader
-    context->program->use();
-    context->program->setInt("texture1", 0);
-    context->program->setInt("texture2", 1);
-    context->program->setFloat("texMix", 0.5 + (cos(ticks) / 2.0));
-    context->program->setMatrix("model", model);
-    context->program->setMatrix("view", view);
     context->program->setMatrix("projection", projection);
 
-    glBindVertexArray(context->VAO);
+    for(int i = 0; i < sizeof(cubePositions) / sizeof(cubePositions[0]); i++) {
+        // Model matrix (rotate along the X axis)
+        auto model = glm::translate(glm::mat4(1.0f), cubePositions[i]);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, context->textures[0]);
+        float angle = (20.0f * i) + (ticks * 10.0f);
+        model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, context->textures[1]);
+        context->program->setMatrix("model", model);
 
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-#if 0
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+#if defined(USE_EBO)
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+#else
+        glDrawArrays(GL_TRIANGLES, 0, 36);
 #endif
+    }
+
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -272,7 +292,10 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
 
     // Create glfw window
     GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "gltut", NULL, NULL);
