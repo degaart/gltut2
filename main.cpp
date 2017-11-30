@@ -157,12 +157,30 @@ static gl_context prepare_context()
 
 static void draw(gl_context* context, float ticks)
 {
+#if 0
     // Generate transform matrix
     // Normal order: scaling, rotations, translations
     glm::mat4 trans(1.0f);
     trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
     trans = glm::rotate(trans, glm::radians(ticks * 50.0f), glm::vec3(0.0, 0.0, 1.0));
     //trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
+#endif
+
+    // Model matrix (rotate along the X axis)
+    glm::mat4 model(1.0f);
+    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+    // View matrix (move backwards by translating along Z axis in negative direction)
+    float position = -3.0f * abs(sin(ticks));
+    auto view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, position));
+
+    // Projection matrix (45° fov)
+    auto nearPlane = 0.1f;
+    auto farPlane = 100.0f;
+    auto projection = glm::perspective(glm::radians(45.0f), 
+                                       (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 
+                                       nearPlane, 
+                                       farPlane);
 
     // Init shader
     context->program->use();
@@ -170,7 +188,9 @@ static void draw(gl_context* context, float ticks)
     context->program->setInt("texture1", 0);
     context->program->setInt("texture2", 1);
     context->program->setFloat("texMix", 0.5 + (cos(ticks) / 2.0));
-    context->program->setMatrix("transform", trans);
+    context->program->setMatrix("model", model);
+    context->program->setMatrix("view", view);
+    context->program->setMatrix("projection", projection);
 
     glBindVertexArray(context->VAO);
 
@@ -183,6 +203,7 @@ static void draw(gl_context* context, float ticks)
     //glDrawArrays(GL_TRIANGLES, 0, 3);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+#if 0
     // Draw second box
     float scaleFactor = abs(sin(ticks));
     glm::mat4 trans2(1.0f);
@@ -191,6 +212,7 @@ static void draw(gl_context* context, float ticks)
 
     context->program->setMatrix("transform", trans2);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+#endif
 
 
     glBindVertexArray(0);
@@ -231,6 +253,9 @@ int main()
     gl_context context = prepare_context();
 
     // Event loop
+    float lastTicks = glfwGetTime();
+    long frames = 0;
+    int lastFps = 0;
     while(!glfwWindowShouldClose(window)) {
         float ticks = glfwGetTime();
 
@@ -242,7 +267,18 @@ int main()
         draw(&context, ticks);
 
         glfwSwapBuffers(window);
-        glfwPollEvents();    
+
+        frames++;
+        if(ticks - lastTicks > 1.0f) {
+            double fps = double(frames) / (ticks - lastTicks);
+            if(fps != lastFps) {
+                std::string title = fmt::format("gltut - {} fps", (int)fps);
+                glfwSetWindowTitle(window, title.c_str());
+                lastFps = fps;
+            }
+        }
+
+        glfwPollEvents();
     }
 
     // Cleanup
