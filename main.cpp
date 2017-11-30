@@ -169,8 +169,7 @@ static void draw(gl_context* context, float ticks)
     context->program->setInt("texture1", 0);
     context->program->setInt("texture2", 1);
     context->program->setFloat("texMix", 0.5 + (cos(ticks) / 2.0));
-    unsigned int transformLoc = glGetUniformLocation(context->program->getId(), "transform");
-    glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
+    context->program->setMatrix("transform", trans);
 
     glBindVertexArray(context->VAO);
 

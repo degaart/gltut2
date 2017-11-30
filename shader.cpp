@@ -5,6 +5,7 @@
 #include <sstream>
 #include <glad/glad.h>
 #include <fmt/format.h>
+#include <glm/gtc/type_ptr.hpp>
 
 static std::string readFile(const std::string& filename)
 {
@@ -135,4 +136,14 @@ void Shader::setFloat(const std::string& name, float value) const
 {
     glUniform1f(glGetUniformLocation(_id, name.c_str()), value);
 }
+
+void Shader::setMatrix(const std::string& name, const glm::mat4& value) const
+{
+    glUniformMatrix4fv(glGetUniformLocation(_id, name.c_str()),
+                       1,                           /* Number of matrices to send */
+                       GL_FALSE,                    /* Transpose? */
+                       glm::value_ptr(value));
+}
+
+
 
