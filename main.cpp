@@ -43,12 +43,49 @@ struct gl_context {
 
 static gl_context prepare_context()
 {
+    // Cube
     float vertices[] = {
-        // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
     unsigned int indices[] = {  // note that we start from 0!
         0, 1, 3,                // first triangle
@@ -61,16 +98,22 @@ static gl_context prepare_context()
     unsigned int VBO;
     glGenBuffers(1, &VBO);
 
+#if 0
     unsigned int EBO;
     glGenBuffers(1, &EBO);
+#endif
 
     glBindVertexArray(VAO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+#if 0
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); 
+#endif
 
+
+#if 0
     // Vertex position attributes
     glVertexAttribPointer(0,                    /* index (in the vertex shader source, position=0) */
                           3,                    /* size of vertex attribute */ 
@@ -97,6 +140,24 @@ static gl_context prepare_context()
                           8 * sizeof(float),
                           BUFFER_OBJECT(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+#endif
+    // Vertex position attributes
+    glVertexAttribPointer(0,                    /* index (in the vertex shader source, position=0) */
+                          3,                    /* size of vertex attribute */ 
+                          GL_FLOAT,             /* type */
+                          GL_FALSE,             /* do not normalize */
+                          5 * sizeof(float),    /* space between consecutive vertex attribute sets */
+                          BUFFER_OBJECT(0));    /* starting position */
+    glEnableVertexAttribArray(0);               /* enable attribute at location 0 */
+
+    // Vertex texture coords attribute
+    glVertexAttribPointer(1,
+                          2,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          5 * sizeof(float),
+                          BUFFER_OBJECT(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // Texture stuffs
     unsigned int textures[2];
@@ -147,6 +208,9 @@ static gl_context prepare_context()
     auto shader = std::make_shared<Shader>("res/shader.vs", 
                                            "res/shader.fs");
 
+    // Enable depth buffer
+    glEnable(GL_DEPTH_TEST);
+
     // Return results
     gl_context result;
     result.program = shader;
@@ -157,21 +221,14 @@ static gl_context prepare_context()
 
 static void draw(gl_context* context, float ticks)
 {
-#if 0
-    // Generate transform matrix
-    // Normal order: scaling, rotations, translations
-    glm::mat4 trans(1.0f);
-    trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
-    trans = glm::rotate(trans, glm::radians(ticks * 50.0f), glm::vec3(0.0, 0.0, 1.0));
-    //trans = glm::scale(trans, glm::vec3(0.5, 0.5, 0.5));
-#endif
-
     // Model matrix (rotate along the X axis)
     glm::mat4 model(1.0f);
-    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    float angle = ticks * glm::radians(50.0f);
+    model = glm::rotate(model, angle, glm::vec3(0.5f, 1.0f, 0.0f));
 
     // View matrix (move backwards by translating along Z axis in negative direction)
-    float position = -3.0f * abs(sin(ticks));
+    //float position = -3.0f * abs(sin(ticks));
+    float position = -3.0f;
     auto view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, position));
 
     // Projection matrix (45° fov)
@@ -184,7 +241,6 @@ static void draw(gl_context* context, float ticks)
 
     // Init shader
     context->program->use();
-    context->program->setFloat("off", sin(ticks) / 2.0f);
     context->program->setInt("texture1", 0);
     context->program->setInt("texture2", 1);
     context->program->setFloat("texMix", 0.5 + (cos(ticks) / 2.0));
@@ -200,20 +256,10 @@ static void draw(gl_context* context, float ticks)
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, context->textures[1]);
 
-    //glDrawArrays(GL_TRIANGLES, 0, 3);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 #if 0
-    // Draw second box
-    float scaleFactor = abs(sin(ticks));
-    glm::mat4 trans2(1.0f);
-    trans2 = glm::translate(trans2, glm::vec3(-0.5f, 0.5f, 0.0f));
-    trans2 = glm::scale(trans2, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
-
-    context->program->setMatrix("transform", trans2);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 #endif
-
 
     glBindVertexArray(0);
     glUseProgram(0);
@@ -262,7 +308,7 @@ int main()
         processInput(window);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         draw(&context, ticks);
 
@@ -276,6 +322,8 @@ int main()
                 glfwSetWindowTitle(window, title.c_str());
                 lastFps = fps;
             }
+            lastTicks = ticks;
+            frames = 0;
         }
 
         glfwPollEvents();
