@@ -158,6 +158,7 @@ static gl_context prepare_context()
 static void draw(gl_context* context, float ticks)
 {
     // Generate transform matrix
+    // Normal order: scaling, rotations, translations
     glm::mat4 trans(1.0f);
     trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
     trans = glm::rotate(trans, glm::radians(ticks * 50.0f), glm::vec3(0.0, 0.0, 1.0));
@@ -181,6 +182,16 @@ static void draw(gl_context* context, float ticks)
 
     //glDrawArrays(GL_TRIANGLES, 0, 3);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    // Draw second box
+    float scaleFactor = abs(sin(ticks));
+    glm::mat4 trans2(1.0f);
+    trans2 = glm::translate(trans2, glm::vec3(-0.5f, 0.5f, 0.0f));
+    trans2 = glm::scale(trans2, glm::vec3(scaleFactor, scaleFactor, scaleFactor));
+
+    context->program->setMatrix("transform", trans2);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 
     glBindVertexArray(0);
     glUseProgram(0);
