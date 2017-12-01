@@ -14,9 +14,12 @@
 #include "shader.h"
 #include "exception.h"
 #include "image.h"
+#include "system.h"
 
 static int windowWidth = 800;
 static int windowHeight = 600;
+
+static std::string resDir;
 
 #define BUFFER_OBJECT(i) ((void*)(i))
 
@@ -162,7 +165,7 @@ static gl_context prepare_context()
     unsigned int textures[2];
     glGenTextures(2, textures);
 
-    Image image0("res/container.jpg");
+    Image image0(fmt::format("{}/container.jpg", resDir));
     glBindTexture(GL_TEXTURE_2D, textures[0]);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // x-coord
@@ -173,16 +176,16 @@ static gl_context prepare_context()
 
     int inputFormat = image0.getChannels() == 3 ? GL_RGB : GL_RGBA;
     glTexImage2D(GL_TEXTURE_2D,
-                 0,                 /* mipmap level */
-                 GL_RGB,            /* format to store into */
+                 0,                         /* mipmap level */
+                 GL_RGB,                    /* format to store into */
                  image0.getWidth(), image0.getHeight(),
-                 0,                 /* unused legacy stuff */
-                 inputFormat,            /* input format */
-                 GL_UNSIGNED_BYTE,  /* input datatype */
+                 0,                         /* unused legacy stuff */
+                 inputFormat,               /* input format */
+                 GL_UNSIGNED_BYTE,          /* input datatype */
                  image0.getData());
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    Image image1("res/awesomeface.png", true);
+    Image image1(fmt::format("{}/awesomeface.png", resDir), true);
     glBindTexture(GL_TEXTURE_2D, textures[1]);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); // x-coord
@@ -203,8 +206,8 @@ static gl_context prepare_context()
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // Create shaders
-    auto shader = std::make_shared<Shader>("res/shader.vs", 
-                                           "res/shader.fs");
+    auto shader = std::make_shared<Shader>(fmt::format("{}/shader.vs", resDir), 
+                                           fmt::format("{}/shader.fs", resDir));
 
     // Assign textures to shaders
     shader->use();
@@ -287,8 +290,16 @@ static void draw(gl_context* context, float ticks)
     glUseProgram(0);
 }
 
-int main()
+int main(int argc, char** argv)
 {
+    // Get resource path
+    auto exePath = sys::exepath(argc, argv);
+    auto appPath = sys::dirname(exePath);
+    resDir = fmt::format("{}/../res", appPath);
+    if(!sys::exists(resDir)) {
+        resDir = fmt::format("{}/../Resources", appPath);
+    }
+
     // Init glfw
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);

@@ -34,3 +34,7 @@
 # Object output dir
 obj
 
+# Vim backup files
+*.swp
+
+

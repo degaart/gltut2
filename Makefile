@@ -2,11 +2,12 @@
 .SUFFIXES:
 
 PROGRAM := gltut
-PREFIX := $(HOME)/Desktop/gltut
+PREFIX := ..
 CFLAGS := $(CFLAGS) -g -I$(PREFIX)/include -std=gnu99
 CXXFLAGS := $(CXXFLAGS) -g -I$(PREFIX)/include -I./fmt -std=gnu++14
 LDFLAGS := $(LDFLAGS) -g -L$(PREFIX)/lib \
 	-framework Cocoa -framework IOKit -framework CoreFoundation -framework CoreVideo \
+	-framework OpenGL \
 	-lglfw3
 
 CXX_SRCS := $(wildcard *.cpp)
@@ -45,4 +46,12 @@ run: all
 
 clean:
 	rm -rf obj
+
+bundle: all
+	mkdir -p obj/gltut.app/Contents/MacOS
+	mkdir -p obj/gltut.app/Contents/Resources
+	cp obj/gltut obj/gltut.app/Contents/MacOS
+	cp Info.plist.in obj/gltut.app/Contents
+	cp res/* obj/gltut.app/Contents/Resources
+
 
