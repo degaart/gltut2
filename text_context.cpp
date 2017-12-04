@@ -12,17 +12,22 @@
 
 #include "shader.h"
 #include "image.h"
-
+#include "system.h"
+#include "stb_truetype.h"
 
 class text_context : public context {
     private:
         unsigned int text_vao;
         std::shared_ptr<Shader> text_program;
         unsigned int text_tex;
+        std::vector<stbtt_bakedchar> charData;
+        unsigned int text_vbo;
     public:
         text_context();
         void draw(float ticks);
 };
+
+#define TEX_SIZE   128
 
 text_context::text_context()
 {
@@ -43,10 +48,9 @@ text_context::text_context()
         1.0f,   1.0f,   0.0f,   1.0f,   1.0f,
         1.0f,   -1.0f,  0.0f,   1.0f,   0.0f,
     };
-    unsigned int text_vbo;
-    glGenBuffers(1, &text_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, text_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(text_vertices), text_vertices, GL_STATIC_DRAW);
+    glGenBuffers(1, &this->text_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, this->text_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(text_vertices), text_vertices, GL_DYNAMIC_DRAW);
 
     glVertexAttribPointer(0,
                           3,
@@ -64,18 +68,16 @@ text_context::text_context()
                           BUFFER_OBJECT(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-#if 0
     auto filename = fmt::format("{}/dos.ttf", resDir);
     auto fontData = sys::readfile(filename);
-    std::vector<unsigned char> pixels(512 * 512);
+    std::vector<unsigned char> pixels(TEX_SIZE * TEX_SIZE);
 
-    auto charData = std::make_shared<std::vector<stbtt_bakedchar>>(96); // 127 - ' ' + 1 = 96
+    this->charData = std::vector<stbtt_bakedchar>(96); // 127 - ' ' + 1 = 96
     int ret = stbtt_BakeFontBitmap(fontData.data(), 0,
-                                   12,
-                                   pixels.data(), 512, 512,
+                                   16,
+                                   pixels.data(), TEX_SIZE, TEX_SIZE,
                                    ' ', 96,
-                                   charData->data());
-#endif
+                                   charData.data());
 
     glGenTextures(1, &this->text_tex);
     glBindTexture(GL_TEXTURE_2D, this->text_tex);
@@ -83,29 +85,16 @@ text_context::text_context()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    Image image2(fmt::format("{}/container.jpg", resDir));
     glTexImage2D(GL_TEXTURE_2D,
                  0,                     /* mipmap level */
                  GL_RGBA,               /* format to store into */
-                 512, 512,
+                 TEX_SIZE, TEX_SIZE,
                  0,                     /* unused legacy stuff */
-                 GL_RGB,                /* input format */
+                 GL_RED,                /* input format */
                  GL_UNSIGNED_BYTE,      /* input datatype */
-                 image2.getData());
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-#if 0
-    glTexImage2D(GL_TEXTURE_2D,
-                 0,
-                 GL_RGB,
-                 512, 512,
-                 0,
-                 GL_RED,
-                 GL_UNSIGNED_BYTE,
                  pixels.data());
-#endif
 
     glEnable(GL_DEPTH_TEST);
 }
@@ -123,6 +112,36 @@ void text_context::draw(float ticks)
     auto transform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -0.5f));
     context->text_program->setMatrix("transform", transform);
 #endif
+
+    float cursor_x = 0.0f;
+    float cursor_y = 0.0f;
+
+    float char_x = 0.0f, char_y = 0.0f;
+    stbtt_aligned_quad quad;
+    stbtt_GetBakedQuad(this->charData.data(),
+                       TEX_SIZE, TEX_SIZE,
+                       '@' - ' ',
+                       &char_x, &char_y,
+                       &quad,
+                       1);
+
+    /*
+     * TODO: Use screenWidth and screenHeight to generate vertices positions
+     * Take into account that the y-coordinate is inverted in OpenGL
+     */
+    float offset_x = char_x;
+    float offset_y = char_y;
+    static const float text_vertices[] = {
+        -1.0f,  1.0f,   0.0f,   quad.s0,    quad.t0,               /* top left */
+        1.0f,   -1.0f,  0.0f,   quad.s1,    quad.t1,               /* bottom right */
+        -1.0f,  -1.0f,  0.0f,   quad.s0,    quad.t1,               /* bottom left */
+
+        -1.0f,  1.0f,   0.0f,   quad.s0,    quad.t0,               /* top left */
+        1.0f,   1.0f,   0.0f,   quad.s1,    quad.t0,               /* top right */
+        1.0f,   -1.0f,  0.0f,   quad.s1,    quad.t1                /* bottom right */
+    };
+    glBindBuffer(GL_ARRAY_BUFFER, this->text_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(text_vertices), text_vertices, GL_DYNAMIC_DRAW);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
