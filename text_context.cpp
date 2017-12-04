@@ -35,11 +35,6 @@ text_context::text_context()
     text_program->setInt("texture1", 0);
 
     static const float text_vertices[] = {
-        // positions          // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 1.0f, // top right
-         0.5f, -0.5f, 0.0f,   1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, // bottom left
-
         -1.0f,  1.0f,   0.0f,   0.0f,   1.0f,
         1.0f,   -1.0f,  0.0f,   1.0f,   0.0f,
         -1.0f,  -1.0f,  0.0f,   0.0f,   0.0f,
@@ -52,6 +47,7 @@ text_context::text_context()
     glGenBuffers(1, &text_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, text_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(text_vertices), text_vertices, GL_STATIC_DRAW);
+
     glVertexAttribPointer(0,
                           3,
                           GL_FLOAT,
@@ -65,7 +61,7 @@ text_context::text_context()
                           GL_FLOAT,
                           GL_FALSE,
                           5 * sizeof(float),
-                          BUFFER_OBJECT(3));
+                          BUFFER_OBJECT(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
 #if 0
@@ -84,20 +80,21 @@ text_context::text_context()
     glGenTextures(1, &this->text_tex);
     glBindTexture(GL_TEXTURE_2D, this->text_tex);
 
-    Image image2(fmt::format("{}/container.jpg", resDir));
-    glTexImage2D(GL_TEXTURE_2D,
-                 0,                 /* mipmap level */
-                 GL_RGBA,            /* format to store into */
-                 512, 512,
-                 0,                 /* unused legacy stuff */
-                 GL_RGB,            /* input format */
-                 GL_UNSIGNED_BYTE,  /* input datatype */
-                 image2.getData());
-
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    Image image2(fmt::format("{}/container.jpg", resDir));
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,                     /* mipmap level */
+                 GL_RGBA,               /* format to store into */
+                 512, 512,
+                 0,                     /* unused legacy stuff */
+                 GL_RGB,                /* input format */
+                 GL_UNSIGNED_BYTE,      /* input datatype */
+                 image2.getData());
+    glGenerateMipmap(GL_TEXTURE_2D);
 
 #if 0
     glTexImage2D(GL_TEXTURE_2D,
@@ -127,13 +124,10 @@ void text_context::draw(float ticks)
     context->text_program->setMatrix("transform", transform);
 #endif
 
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Cleanup
     glBindVertexArray(0);
     glUseProgram(0);
-
 }
 
 std::shared_ptr<context> make_text_context()
