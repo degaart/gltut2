@@ -22,9 +22,11 @@ class text_context : public context {
         unsigned int text_tex;
         std::vector<stbtt_bakedchar> charData;
         unsigned int text_vbo;
+        float font_size;
     public:
         text_context();
         void draw(float ticks);
+        void drawText(const std::string& text, float x, float y);
 };
 
 #define TEX_SIZE   128
@@ -72,9 +74,10 @@ text_context::text_context()
     auto fontData = sys::readfile(filename);
     std::vector<unsigned char> pixels(TEX_SIZE * TEX_SIZE);
 
+    font_size = 16;
     this->charData = std::vector<stbtt_bakedchar>(96); // 127 - ' ' + 1 = 96
     int ret = stbtt_BakeFontBitmap(fontData.data(), 0,
-                                   16,
+                                   font_size,
                                    pixels.data(), TEX_SIZE, TEX_SIZE,
                                    ' ', 96,
                                    charData.data());
@@ -85,21 +88,37 @@ text_context::text_context()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glTexImage2D(GL_TEXTURE_2D,
                  0,                     /* mipmap level */
-                 GL_RGBA,               /* format to store into */
+                 GL_RED,               /* format to store into */
                  TEX_SIZE, TEX_SIZE,
                  0,                     /* unused legacy stuff */
                  GL_RED,                /* input format */
                  GL_UNSIGNED_BYTE,      /* input datatype */
                  pixels.data());
 
+    glDisable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LEQUAL);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
+struct Point {
+    float x, y;
+};
+
 void text_context::draw(float ticks)
+{
+    drawText("gltut", 0, 0);
+    glBindVertexArray(0);
+    glUseProgram(0);
+}
+
+void text_context::drawText(const std::string& text, float x, float y)
 {
     this->text_program->use();
     glBindVertexArray(this->text_vao);
@@ -107,46 +126,57 @@ void text_context::draw(float ticks)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, this->text_tex);
     this->text_program->setInt("texture1", 0);
-
-#if 0
-    auto transform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -0.5f));
-    context->text_program->setMatrix("transform", transform);
-#endif
-
-    float cursor_x = 0.0f;
-    float cursor_y = 0.0f;
-
-    float char_x = 0.0f, char_y = 0.0f;
-    stbtt_aligned_quad quad;
-    stbtt_GetBakedQuad(this->charData.data(),
-                       TEX_SIZE, TEX_SIZE,
-                       '@' - ' ',
-                       &char_x, &char_y,
-                       &quad,
-                       1);
-
-    /*
-     * TODO: Use screenWidth and screenHeight to generate vertices positions
-     * Take into account that the y-coordinate is inverted in OpenGL
-     */
-    float offset_x = char_x;
-    float offset_y = char_y;
-    static const float text_vertices[] = {
-        -1.0f,  1.0f,   0.0f,   quad.s0,    quad.t0,               /* top left */
-        1.0f,   -1.0f,  0.0f,   quad.s1,    quad.t1,               /* bottom right */
-        -1.0f,  -1.0f,  0.0f,   quad.s0,    quad.t1,               /* bottom left */
-
-        -1.0f,  1.0f,   0.0f,   quad.s0,    quad.t0,               /* top left */
-        1.0f,   1.0f,   0.0f,   quad.s1,    quad.t0,               /* top right */
-        1.0f,   -1.0f,  0.0f,   quad.s1,    quad.t1                /* bottom right */
-    };
     glBindBuffer(GL_ARRAY_BUFFER, this->text_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(text_vertices), text_vertices, GL_DYNAMIC_DRAW);
 
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    Point cursor;
+    cursor.x = 0;
+    cursor.y = y + font_size;
 
-    glBindVertexArray(0);
-    glUseProgram(0);
+    Point offset;
+    offset.x = 0;
+    offset.y = 0;
+
+    Point scale;
+    scale.x = 0.0125f;
+    scale.y = 0.0125f;
+    for(const unsigned char* c = (const unsigned char*)text.c_str(); *c; c++) {
+        if(*c >= ' ' && *c <= 128) {
+            stbtt_aligned_quad quad;
+            stbtt_GetBakedQuad(this->charData.data(),
+                               TEX_SIZE, TEX_SIZE,
+                               *c - ' ',
+                               &cursor.x, &cursor.y,
+                               &quad,
+                               1);
+
+            /*
+             * Coordinates transformation (linear interpolation)
+             *  x = ((2.0 * char_x) / screenWidth) - 1.0
+             *  y = ((-2.0 * char_y) / screenHeight) + 1.0
+             */
+#define X(x) (((2.0f * (x)) / (float)windowWidth) - 1.0f)
+#define Y(y) (((-2.0f * (y)) / (float)windowHeight) + 1.0f)
+            quad.x0 = X(quad.x0);
+            quad.y0 = Y(quad.y0);
+            quad.x1 = X(quad.x1);
+            quad.y1 = Y(quad.y1);
+
+            float text_vertices[] = {
+                quad.x0,    quad.y0,    0.0f,   quad.s0,    quad.t0,               /* top left */
+                quad.x1,    quad.y1,    0.0f,   quad.s1,    quad.t1,               /* bottom right */
+                quad.x0,    quad.y1,    0.0f,   quad.s0,    quad.t1,               /* bottom left */
+
+                quad.x0,    quad.y0,    0.0f,   quad.s0,    quad.t0,               /* top left */
+                quad.x1,    quad.y0,    0.0f,   quad.s1,    quad.t0,               /* top right */
+                quad.x1,    quad.y1,    0.0f,   quad.s1,    quad.t1,               /* bottom right */
+            };
+            glBufferData(GL_ARRAY_BUFFER, sizeof(text_vertices), text_vertices, GL_DYNAMIC_DRAW);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+
+#undef X
+#undef Y
+        }
+    }
 }
 
 std::shared_ptr<context> make_text_context()
