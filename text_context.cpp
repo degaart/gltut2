@@ -14,8 +14,9 @@
 #include "image.h"
 #include "system.h"
 #include "stb_truetype.h"
+#include "text_context.h"
 
-class text_context : public context {
+class text_context_impl : public context {
     private:
         unsigned int text_vao;
         std::shared_ptr<Shader> text_program;
@@ -24,14 +25,14 @@ class text_context : public context {
         unsigned int text_vbo;
         float font_size;
     public:
-        text_context();
+        text_context_impl();
         void draw(float ticks);
         void drawText(const std::string& text, float x, float y);
 };
 
 #define TEX_SIZE   128
 
-text_context::text_context()
+text_context_impl::text_context_impl()
 {
     glGenVertexArrays(1, &this->text_vao);
     glBindVertexArray(this->text_vao);
@@ -99,26 +100,26 @@ text_context::text_context()
                  GL_UNSIGNED_BYTE,      /* input datatype */
                  pixels.data());
 
-    glDisable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    glDepthFunc(GL_LEQUAL);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glDisable(GL_CULL_FACE);
+    //glEnable(GL_DEPTH_TEST);
+    //glDepthMask(GL_TRUE);
+    //glDepthFunc(GL_LEQUAL);
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 struct Point {
     float x, y;
 };
 
-void text_context::draw(float ticks)
+void text_context_impl::draw(float ticks)
 {
     drawText("gltut", 0, 0);
     glBindVertexArray(0);
     glUseProgram(0);
 }
 
-void text_context::drawText(const std::string& text, float x, float y)
+void text_context_impl::drawText(const std::string& text, float x, float y)
 {
     this->text_program->use();
     glBindVertexArray(this->text_vao);
@@ -179,8 +180,27 @@ void text_context::drawText(const std::string& text, float x, float y)
     }
 }
 
-std::shared_ptr<context> make_text_context()
+text_context::text_context():
+    impl(new text_context_impl())
+{
+}
+
+void text_context::draw(float ticks)
+{
+    this->impl->draw(ticks);
+}
+
+void text_context::drawText(float x, float y, const std::string& text)
+{
+    impl->drawText(text, x, y);
+}
+
+std::shared_ptr<text_context> make_text_context()
 {
     return std::make_shared<text_context>();
 }
+
+
+
+
 

@@ -25,6 +25,7 @@
 int windowWidth = 800;
 int windowHeight = 600;
 std::string resDir;
+std::shared_ptr<text_context> textContext;
 
 //#define USE_EBO
 
@@ -86,12 +87,13 @@ int main(int argc, char** argv)
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Prepare OpenGL context
-    std::shared_ptr<context> context = make_text_context();
+    std::shared_ptr<context> main_context = make_main_context();
+    textContext = make_text_context();
 
     // Event loop
     float lastTicks = glfwGetTime();
     long frames = 0;
-    int lastFps = 0;
+    int fps = 0;
     while(!glfwWindowShouldClose(window)) {
         float ticks = glfwGetTime();
 
@@ -100,22 +102,19 @@ int main(int argc, char** argv)
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        context->draw(ticks);
-
-        glfwSwapBuffers(window);
+        main_context->draw(ticks);
 
         frames++;
         if(ticks - lastTicks > 1.0f) {
-            double fps = double(frames) / (ticks - lastTicks);
-            if(fps != lastFps) {
-                std::string title = fmt::format("gltut - {} fps", (int)fps);
-                glfwSetWindowTitle(window, title.c_str());
-                lastFps = fps;
-            }
+            fps = (int)(double(frames) / (ticks - lastTicks));
+
             lastTicks = ticks;
             frames = 0;
         }
 
+        textContext->drawText(0.0f, 0.0f, fmt::format("{} fps", fps));
+
+        glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
