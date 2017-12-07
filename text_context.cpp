@@ -100,12 +100,8 @@ text_context_impl::text_context_impl()
                  GL_UNSIGNED_BYTE,      /* input datatype */
                  pixels.data());
 
-    //glDisable(GL_CULL_FACE);
-    //glEnable(GL_DEPTH_TEST);
-    //glDepthMask(GL_TRUE);
-    //glDepthFunc(GL_LEQUAL);
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 struct Point {

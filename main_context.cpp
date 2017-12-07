@@ -1,6 +1,7 @@
 #include "main_context.h"
 
 #include <fmt/format.h>
+#include <fmt/printf.h>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -8,15 +9,34 @@
 
 #include "shader.h"
 #include "image.h"
+#include "text_context.h"
 
 class main_context : public context {
     private:
         std::shared_ptr<Shader> program;
         unsigned int VAO;
         unsigned int textures[2];
+
+        glm::vec3 cameraPos;
+        glm::vec3 cameraFront;
+        glm::vec3 cameraUp; 
+
+        float lastMouseX;
+        float lastMouseY;
+
+        float yaw;
+        float pitch;
+        float roll;
+
+        float fov;
+
+        bool firstMouse;
     public:
         main_context();
         void draw(float ticks);
+        void onInput(unsigned keyMask, float deltaTicks);
+        void onMouseMove(float xpos, float ypos);
+        void onMouseScroll(float xoffset, float yoffset);
 };
 
 main_context::main_context()
@@ -187,6 +207,80 @@ main_context::main_context()
     //////////////////////////////////////////////////////////////////////////////////////////////////
     // Enable depth buffer
     glEnable(GL_DEPTH_TEST);
+
+    // Init camera
+    cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
+    cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+    cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
+
+    lastMouseX = windowWidth / 2.0f;
+    lastMouseY = windowHeight / 2.0f;
+
+    yaw = -90.0f;
+    pitch = 0.0f;
+    roll = 0.0f;
+
+    firstMouse = true;
+
+    fov = 45.0f;
+}
+
+void main_context::onInput(unsigned keyMask, float deltaTicks)
+{
+    float cameraSpeed = 2.5f * deltaTicks;
+
+    if(keyMask & KEY_Z)
+        cameraPos += cameraSpeed * cameraFront;
+    if(keyMask & KEY_S)
+        cameraPos -= cameraSpeed * cameraFront;
+    if(keyMask & KEY_Q)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if(keyMask & KEY_D)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+}
+
+void main_context::onMouseMove(float xpos, float ypos)
+{
+    if(firstMouse) {
+        lastMouseX = xpos;
+        lastMouseY = ypos;
+
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastMouseX;
+    float yoffset = lastMouseY - ypos; // reversed since y-coordinates range from bottom to top
+    lastMouseX = xpos;
+    lastMouseY = ypos;
+
+    float sensitivity = 0.05f;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw   += xoffset;
+    pitch += yoffset;
+
+    if(pitch > 89.0f)
+        pitch =  89.0f;
+    if(pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(pitch)) * cos(glm::radians(yaw));
+    front.y = sin(glm::radians(pitch));
+    front.z = cos(glm::radians(pitch)) * sin(glm::radians(yaw));
+
+    cameraFront = glm::normalize(front);
+}
+
+void main_context::onMouseScroll(float xoffset, float yoffset)
+{
+    if(fov >= 1.0f && fov <= 45.0f)
+        fov -= yoffset;
+    if(fov <= 1.0f)
+        fov = 1.0f;
+    if(fov >= 45.0f)
+        fov = 45.0f;
 }
 
 void main_context::draw(float ticks)
@@ -218,15 +312,17 @@ void main_context::draw(float ticks)
     glBindTexture(GL_TEXTURE_2D, this->textures[1]);
     this->program->setInt("texture2", 1);
 
-    // View matrix (move backwards by translating along Z axis in negative direction)
-    float position = -3.0f;
-    auto view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, position));
+    // View matrix
+    //cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+    auto view = glm::lookAt(cameraPos,                      /* Position */
+                            cameraPos + cameraFront,        /* Target */
+                            cameraUp);                      /* Up */
     this->program->setMatrix("view", view);
 
     // Projection matrix (45° fov)
     auto nearPlane = 0.1f;
     auto farPlane = 100.0f;
-    auto projection = glm::perspective(glm::radians(45.0f), 
+    auto projection = glm::perspective(glm::radians(fov), 
                                        (float)windowWidth / (float)windowHeight, 
                                        nearPlane, 
                                        farPlane);
@@ -236,7 +332,8 @@ void main_context::draw(float ticks)
         // Model matrix (rotate along the X axis)
         auto model = glm::translate(glm::mat4(1.0f), cubePositions[i]);
 
-        float angle = (20.0f * i) + (ticks * 10.0f);
+        //float angle = (20.0f * i) + (ticks * 10.0f);
+        float angle = 20.0f * i;
         model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 
         this->program->setMatrix("model", model);
@@ -252,6 +349,15 @@ void main_context::draw(float ticks)
     // Cleanup
     glBindVertexArray(0);
     glUseProgram(0);
+
+    textContext->drawText(0.0f, 16.0f, 
+                          fmt::sprintf("cam: (%0.02f, %0.02f, %0.02f)", 
+                                      cameraPos.x,
+                                      cameraPos.y,
+                                      cameraPos.z));
+    textContext->drawText(0.0f, 32.0f,
+                          fmt::sprintf("yaw: %0.2f, pitch: %0.2f, fov: %0.2f",
+                                       yaw, pitch, fov));
 }
 
 std::shared_ptr<context> make_main_context()
