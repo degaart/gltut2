@@ -22,8 +22,8 @@ void main()
      */
     FragPos = vec3(model * vec4(aPos, 1.0));
 
-    /* Forward normal to fragment shader */
-    Normal = aNormal;
+    /* Some magic to calculate normals so we can support non-uniform scaling */
+    Normal = mat3(transpose(inverse(model))) * aNormal;  
 } 
 
 
