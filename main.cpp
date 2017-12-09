@@ -5,6 +5,7 @@
 #include <cmath>
 #include <memory>
 #include <fmt/format.h>
+#include <fmt/printf.h>
 #include <fcntl.h>
 
 #include <glm/glm.hpp>
@@ -20,7 +21,6 @@
 
 #include "camera.h"
 #include "context.h"
-#include "main_context.h"
 #include "text_context.h"
 
 int windowWidth = 800;
@@ -34,7 +34,11 @@ static float lastMouseX = 0.0f;
 static float lastMouseY = 0.0f;
 
 //#define USE_EBO
-
+#define CONTEXT lighting
+#define PASTE2_(a, b) a ## b
+#define PASTE2(a, b) PASTE2_(a, b)
+#define PASTE3_(a, b, c) a ## b ## c
+#define PASTE3(a, b, c) PASTE3_(a, b, c)
 
 // Callback called when the window is resized
 static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -45,9 +49,7 @@ static void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 }
 
 // Process inputs
-static void processInput(GLFWwindow *window, 
-                         std::shared_ptr<context> ctx,
-                         float deltaTicks)
+static void processInput(GLFWwindow *window, float deltaTicks)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -82,6 +84,8 @@ static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.processMouseScroll(yoffset);
 }
+
+std::shared_ptr<context> PASTE3(make_, CONTEXT, _context) ();
 
 int main(int argc, char** argv)
 {
@@ -125,13 +129,10 @@ int main(int argc, char** argv)
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Prepare OpenGL context
-    std::shared_ptr<context> main_context = make_main_context();
+    std::shared_ptr<context> ctx = PASTE3(make_, CONTEXT, _context) ();
     textContext = make_text_context();
 
-
     // Add some input callbacks
-    glfwSetWindowUserPointer(window, main_context.get());
-
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
@@ -150,12 +151,12 @@ int main(int argc, char** argv)
         deltaTicks = ticks - lastTicks;
         lastTicks = ticks;
 
-        processInput(window, main_context, deltaTicks);
+        processInput(window, deltaTicks);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        main_context->draw(ticks);
+        ctx->draw(ticks);
 
         frames++;
         if(frames > 30 && ticks - lastFrames > 0.0f) {
@@ -165,6 +166,14 @@ int main(int argc, char** argv)
         }
 
         textContext->drawText(0.0f, 0.0f, fmt::format("{} fps", fps));
+        textContext->drawText(0.0f, 16.0f, 
+                              fmt::sprintf("cam: (%0.02f, %0.02f, %0.02f)", 
+                                          camera.position().x,
+                                          camera.position().y,
+                                          camera.position().z));
+        textContext->drawText(0.0f, 32.0f,
+                              fmt::sprintf("yaw: %0.2f, pitch: %0.2f, fov: %0.2f",
+                                           camera.yaw(), camera.pitch(), camera.zoom()));
 
         glfwSwapBuffers(window);
         glfwPollEvents();

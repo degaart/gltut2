@@ -1,4 +1,4 @@
-#include "main_context.h"
+#include "context.h"
 
 #include <fmt/format.h>
 #include <fmt/printf.h>
@@ -214,15 +214,6 @@ void main_context::draw(float ticks)
     // Cleanup
     glBindVertexArray(0);
     glUseProgram(0);
-
-    textContext->drawText(0.0f, 16.0f, 
-                          fmt::sprintf("cam: (%0.02f, %0.02f, %0.02f)", 
-                                      camera.position().x,
-                                      camera.position().y,
-                                      camera.position().z));
-    textContext->drawText(0.0f, 32.0f,
-                          fmt::sprintf("yaw: %0.2f, pitch: %0.2f, fov: %0.2f",
-                                       camera.yaw(), camera.pitch(), camera.zoom()));
 }
 
 std::shared_ptr<context> make_main_context()
