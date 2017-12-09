@@ -33,15 +33,20 @@ lighting_context::lighting_context()
     unsigned int vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cube1), cube1, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cube2), cube2, GL_STATIC_DRAW);
+
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-                          3 * sizeof(float),
+                          6 * sizeof(float),
                           BUFFER_OBJECT(0));
     glEnableVertexAttribArray(0);
+
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
+                          6 * sizeof(float),
+                          BUFFER_OBJECT(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
     
     shader = std::make_shared<Shader>(fmt::format("{}/lighting.vs", resDir),
                                       fmt::format("{}/lighting.fs", resDir));
-
     
     // Create Lamp
     lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
@@ -49,10 +54,11 @@ lighting_context::lighting_context()
     glGenVertexArrays(1, &lampVao);
     glBindVertexArray(lampVao);
 
-    // we only need to bind to the VBO, the container's VBO's data already contains the correct data.
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    unsigned int lightVbo;
+    glGenBuffers(1, &lightVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, lightVbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cube1), cube1, GL_STATIC_DRAW);
 
-    // set the vertex attributes (only position data for our lamp)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
                           3 * sizeof(float), 
                           BUFFER_OBJECT(0));
@@ -68,6 +74,7 @@ void lighting_context::draw(float ticks)
 {
     // Draw container
     shader->use();
+    shader->setVec3("lightPos", lightPos);
     shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
     shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 
@@ -98,7 +105,6 @@ void lighting_context::draw(float ticks)
     lampShader->setMatrix("projection", projection);
     lampShader->setMatrix("model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
-
 }
 
 std::shared_ptr<context> make_lighting_context()

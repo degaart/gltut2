@@ -7,7 +7,8 @@
 #include <vector>
 
 enum class CameraMovement {
-    FORWARD, BACKWARD, LEFT, RIGHT
+    FORWARD, BACKWARD, LEFT, RIGHT,
+    UP, DOWN
 };
 
 class Camera {
@@ -37,7 +38,7 @@ class Camera {
         glm::mat4 getViewMatrix();
         void processKeyboard(CameraMovement direction, float deltaTime);
         void processMouseMovement(float xoffset, float yoffset, bool constrainPitch = true);
-        void processMouseScroll(float yoffset);
+        void processMouseScroll(float xoffset, float yoffset);
 
         const glm::vec3& position() const;
         const glm::vec3& front() const;

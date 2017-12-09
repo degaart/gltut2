@@ -28,7 +28,9 @@ int windowHeight = 600;
 std::string resDir;
 std::shared_ptr<text_context> textContext;
 
-Camera camera;
+Camera camera(3.98f, 1.94f, 3.43f,
+              0.0f, 1.0f, 0.0f,
+              217.0f, -22.90f);
 static bool firstMouse = true;
 static float lastMouseX = 0.0f;
 static float lastMouseY = 0.0f;
@@ -62,6 +64,10 @@ static void processInput(GLFWwindow *window, float deltaTicks)
         camera.processKeyboard(CameraMovement::LEFT, deltaTicks);
     if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.processKeyboard(CameraMovement::RIGHT, deltaTicks);
+    if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        camera.processKeyboard(CameraMovement::UP, deltaTicks);
+    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        camera.processKeyboard(CameraMovement::DOWN, deltaTicks);
 }
 
 static void mouse_callback(GLFWwindow* window, double xpos, double ypos)
@@ -82,7 +88,7 @@ static void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    camera.processMouseScroll(yoffset);
+    camera.processMouseScroll(xoffset, yoffset);
 }
 
 std::shared_ptr<context> PASTE3(make_, CONTEXT, _context) ();
@@ -133,10 +139,9 @@ int main(int argc, char** argv)
     textContext = make_text_context();
 
     // Add some input callbacks
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
-
 
     // Event loop
     long frames = 0;

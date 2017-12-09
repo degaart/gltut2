@@ -36,6 +36,10 @@ void Camera::processKeyboard(CameraMovement direction, float deltaTime)
         _position -= _right * velocity;
     if(direction == CameraMovement::RIGHT)
         _position += _right * velocity;
+    if(direction == CameraMovement::UP)
+        _position += _up * velocity;
+    if(direction == CameraMovement::DOWN)
+        _position -= _up * velocity;
 }
 
 void Camera::processMouseMovement(float xoffset, float yoffset, bool constrainPitch)
@@ -58,7 +62,7 @@ void Camera::processMouseMovement(float xoffset, float yoffset, bool constrainPi
     updateCameraVectors();
 }
 
-void Camera::processMouseScroll(float yoffset)
+void Camera::processMouseScroll(float xoffset, float yoffset)
 {
     if (_zoom >= 1.0f && _zoom <= 45.0f)
         _zoom -= yoffset;
