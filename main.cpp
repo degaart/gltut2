@@ -18,6 +18,7 @@
 #include "image.h"
 #include "system.h"
 
+#include "camera.h"
 #include "context.h"
 #include "main_context.h"
 #include "text_context.h"
@@ -26,6 +27,11 @@ int windowWidth = 800;
 int windowHeight = 600;
 std::string resDir;
 std::shared_ptr<text_context> textContext;
+
+Camera camera;
+static bool firstMouse = true;
+static float lastMouseX = 0.0f;
+static float lastMouseY = 0.0f;
 
 //#define USE_EBO
 
@@ -46,39 +52,35 @@ static void processInput(GLFWwindow *window,
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    unsigned mask = 0;
-    if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        mask |= context::KEY_UP;
-    if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        mask |= context::KEY_DOWN;
-    if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        mask |= context::KEY_LEFT;
-    if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        mask |= context::KEY_RIGHT;
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        mask |= context::KEY_Z;
+        camera.processKeyboard(CameraMovement::FORWARD, deltaTicks);
     if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        mask |= context::KEY_S;
+        camera.processKeyboard(CameraMovement::BACKWARD, deltaTicks);
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        mask |= context::KEY_Q;
+        camera.processKeyboard(CameraMovement::LEFT, deltaTicks);
     if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        mask |= context::KEY_D;
-   
-    if(mask) {
-        ctx->onInput(mask, deltaTicks);
-    }
+        camera.processKeyboard(CameraMovement::RIGHT, deltaTicks);
 }
 
 static void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    context* ctx = (context*)glfwGetWindowUserPointer(window);
-    ctx->onMouseMove((float)xpos, (float)ypos);
+    if(firstMouse) {
+        lastMouseX = xpos;
+        lastMouseY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastMouseX;
+    float yoffset = lastMouseY - ypos;
+    lastMouseX = xpos;
+    lastMouseY = ypos;
+
+    camera.processMouseMovement(xoffset, yoffset);
 }
 
 static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    context* ctx = (context*)glfwGetWindowUserPointer(window);
-    ctx->onMouseScroll(xoffset, yoffset);
+    camera.processMouseScroll(yoffset);
 }
 
 int main(int argc, char** argv)

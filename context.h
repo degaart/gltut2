@@ -13,13 +13,13 @@ extern std::string resDir;
 class text_context;
 extern std::shared_ptr<text_context> textContext;
 
+#include "camera.h"
+extern Camera camera;
+
 class context {
     public:
         virtual ~context() {}
         virtual void draw(float ticks) = 0;
-        virtual void onInput(unsigned keyMask, float deltaTicks) {}
-        virtual void onMouseMove(float xpos, float ypos) {}
-        virtual void onMouseScroll(float xoffset, float yoffset) {}
 
         static const unsigned KEY_UP    = 0x0001;
         static const unsigned KEY_DOWN  = 0x0002;
