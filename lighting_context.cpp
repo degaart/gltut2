@@ -99,27 +99,6 @@ void lighting_context::draw(float ticks)
     lampShader->setMatrix("model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
-
-#if 0
-    // don't forget to 'use' the corresponding shader program first (to set the uniform)
-    lightingShader.use();
-    lightingShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-    lightingShader.setVec3("lightColor",  1.0f, 1.0f, 1.0f);
-
-    // Draw the lamp
-    auto model = glm::mat4();
-    model = glm::translate(model, lightPos);
-    model = glm::scale(model, glm::vec3(0.2f)); 
-
-    lampShader.use();
-    // set the model, view and projection matrix uniforms
-    // TODO
-
-    // draw the lamp object
-    glBindVertexArray(lightVAO);
-    glDrawArrays(GL_TRIANGLES, 0, 36);	
-#endif
-
 }
 
 std::shared_ptr<context> make_lighting_context()
