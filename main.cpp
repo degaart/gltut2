@@ -28,9 +28,9 @@ int windowHeight = 600;
 std::string resDir;
 std::shared_ptr<text_context> textContext;
 
-Camera camera(3.98f, 1.94f, 3.43f,
+Camera camera(1.14f, 0.89f, 1.85f,
               0.0f, 1.0f, 0.0f,
-              217.0f, -22.90f);
+              239.90f, -24.0f);
 static bool firstMouse = true;
 static float lastMouseX = 0.0f;
 static float lastMouseY = 0.0f;
@@ -158,8 +158,8 @@ int main(int argc, char** argv)
 
         processInput(window, deltaTicks);
 
-        //glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        //glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         ctx->draw(ticks);

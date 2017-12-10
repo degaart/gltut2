@@ -15,6 +15,9 @@ class lighting_context : public context {
         unsigned int vao;
         std::shared_ptr<Shader> shader;
 
+        unsigned int diffuseMap;
+        unsigned int specularMap;
+
         unsigned int lampVao;
         std::shared_ptr<Shader> lampShader;
         glm::vec3 lightPos;
@@ -33,18 +36,54 @@ lighting_context::lighting_context()
     unsigned int vbo;
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cube2), cube2, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cube3), cube3, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-                          6 * sizeof(float),
+                          8 * sizeof(float),
                           BUFFER_OBJECT(0));
     glEnableVertexAttribArray(0);
 
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,
-                          6 * sizeof(float),
+                          8 * sizeof(float),
                           BUFFER_OBJECT(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE,
+                          8 * sizeof(float),
+                          BUFFER_OBJECT(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
     
+    Image diffuseTexture(fmt::format("{}/container2.png", resDir));
+    glGenTextures(1, &diffuseMap);
+    glBindTexture(GL_TEXTURE_2D, diffuseMap);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 GL_RGB,
+                 diffuseTexture.getWidth(), diffuseTexture.getHeight(),
+                 0,
+                 diffuseTexture.getChannels() == 3 ? GL_RGB : GL_RGBA,
+                 GL_UNSIGNED_BYTE,
+                 diffuseTexture.getData());
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    Image specularTexture(fmt::format("{}/container2_specular.png", resDir)); 
+    glGenTextures(1, &specularMap);
+    glBindTexture(GL_TEXTURE_2D, specularMap);
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 GL_RGB,
+                 specularTexture.getWidth(), specularTexture.getHeight(),
+                 0,
+                 specularTexture.getChannels() == 3 ? GL_RGB : GL_RGBA,
+                 GL_UNSIGNED_BYTE,
+                 specularTexture.getData());
+    glGenerateMipmap(GL_TEXTURE_2D);
+
     shader = std::make_shared<Shader>(fmt::format("{}/lighting.vs", resDir),
                                       fmt::format("{}/lighting.fs", resDir));
     
@@ -79,25 +118,22 @@ void lighting_context::draw(float ticks)
     glm::vec3 lightColor;
     lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 
-    float diffuse = 0.75f;
-    float ambient = 0.2f;
-    glm::vec3 diffuseColor = lightColor   * glm::vec3(diffuse);
-    glm::vec3 ambientColor = diffuseColor * glm::vec3(ambient);
-    
-    lightPos.x = abs(cos(ticks));
-    lightPos.y = 1.0f + abs(sin(ticks));
-    lightPos.z = 2.0f + abs(sin(ticks));
     shader->setVec3("light.position", lightPos);
-    shader->setVec3("light.ambient",  ambientColor);
-    shader->setVec3("light.diffuse",  diffuseColor); // darken the light a bit to fit the scene
+    shader->setVec3("light.ambient",  0.2f, 0.2f, 0.2f);
+    shader->setVec3("light.diffuse",  0.75f, 0.75f, 0.75f);
     shader->setVec3("light.specular", 1.0f, 1.0f, 1.0f); 
 
-    shader->setVec3("material.ambient",  1.0f, 0.5f, 0.31f);
-    shader->setVec3("material.diffuse",  1.0f, 0.5f, 0.31f);
-    shader->setVec3("material.specular", 0.5f, 0.5f, 0.5f);
-    shader->setFloat("material.shininess", 32.0f);
+    shader->setFloat("material.shininess", 64.0f);
 
     glBindVertexArray(vao);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, diffuseMap);
+    shader->setInt("material.diffuse", 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, specularMap);
+    shader->setInt("material.specular", 1);
 
     auto view = glm::lookAt(camera.position(),
                             camera.position() + camera.front(),
@@ -108,6 +144,9 @@ void lighting_context::draw(float ticks)
                                        0.1f, 100.0f);
 
     auto model = glm::mat4(1.0f);
+    auto angle = fmod(ticks * 40.0f, 360.0f);
+    model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+
     shader->setMatrix("view", view);
     shader->setMatrix("projection", projection);
     shader->setMatrix("model", model);
@@ -126,8 +165,8 @@ void lighting_context::draw(float ticks)
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
     textContext->drawText(0.0f, 16.0f*3.0f, 
-                          fmt::sprintf("ambient: %0.2f, diffuse: %0.2f",
-                                       ambient, diffuse));
+                          fmt::sprintf("angle: %0.2f",
+                                       angle));
 }
 
 std::shared_ptr<context> make_lighting_context()
