@@ -171,7 +171,7 @@ int main(int argc, char** argv)
             lastFrames = ticks;
         }
 
-        textContext->drawText(0.0f, 0.0f, fmt::format("{} fps", fps));
+        textContext->drawText(0.0f, 0.0f, fmt::sprintf("fps: %d - ticks: %0.2f", fps, ticks));
         textContext->drawText(0.0f, 16.0f, 
                               fmt::sprintf("cam: (%0.02f, %0.02f, %0.02f)", 
                                           camera.position().x,

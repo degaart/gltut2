@@ -74,10 +74,28 @@ void lighting_context::draw(float ticks)
 {
     // Draw container
     shader->use();
-    shader->setVec3("lightPos", lightPos);
-    shader->setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-    shader->setVec3("lightColor", 1.0f, 1.0f, 1.0f);
     shader->setVec3("viewPos", camera.position());
+
+    glm::vec3 lightColor;
+    lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+
+    float diffuse = 0.75f;
+    float ambient = 0.2f;
+    glm::vec3 diffuseColor = lightColor   * glm::vec3(diffuse);
+    glm::vec3 ambientColor = diffuseColor * glm::vec3(ambient);
+    
+    lightPos.x = abs(cos(ticks));
+    lightPos.y = 1.0f + abs(sin(ticks));
+    lightPos.z = 2.0f + abs(sin(ticks));
+    shader->setVec3("light.position", lightPos);
+    shader->setVec3("light.ambient",  ambientColor);
+    shader->setVec3("light.diffuse",  diffuseColor); // darken the light a bit to fit the scene
+    shader->setVec3("light.specular", 1.0f, 1.0f, 1.0f); 
+
+    shader->setVec3("material.ambient",  1.0f, 0.5f, 0.31f);
+    shader->setVec3("material.diffuse",  1.0f, 0.5f, 0.31f);
+    shader->setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+    shader->setFloat("material.shininess", 32.0f);
 
     glBindVertexArray(vao);
 
@@ -106,6 +124,10 @@ void lighting_context::draw(float ticks)
     lampShader->setMatrix("projection", projection);
     lampShader->setMatrix("model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
+
+    textContext->drawText(0.0f, 16.0f*3.0f, 
+                          fmt::sprintf("ambient: %0.2f, diffuse: %0.2f",
+                                       ambient, diffuse));
 }
 
 std::shared_ptr<context> make_lighting_context()
