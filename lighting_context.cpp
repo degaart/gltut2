@@ -132,11 +132,13 @@ void lighting_context::draw(float ticks)
     glm::vec3 lightColor;
     lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 
-    //shader->setVec3("light.position", lightPos);
-    shader->setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+    shader->setVec3("light.position", lightPos);
     shader->setVec3("light.ambient",  0.2f, 0.2f, 0.2f);
     shader->setVec3("light.diffuse",  0.75f, 0.75f, 0.75f);
     shader->setVec3("light.specular", 1.0f, 1.0f, 1.0f); 
+    shader->setFloat("light.constant", 1.0f);
+    shader->setFloat("light.linear", 0.09f);
+    shader->setFloat("light.quadratic", 0.032f);
 
     shader->setFloat("material.shininess", 64.0f);
 
