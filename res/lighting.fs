@@ -16,14 +16,14 @@ struct Material {
 
 struct Light {
     vec3 position;
+    vec3 direction;
   
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
 
-    float constant;
-    float linear;
-    float quadratic;
+    float cutoff;
+    float outerCutoff;
 };
 
 uniform Material material;
@@ -32,12 +32,23 @@ uniform vec3 viewPos;
 
 void main()
 {
+    vec3 result;
+
     // ambient
     vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
 
+    // Light direction
+    vec3 lightDir = normalize(light.position - FragPos);
+
+    // Theta angle for flashlight
+    float theta = dot(lightDir, normalize(-light.direction));
+
+    // Epsilon for flashlight smoothing
+    float epsilon = light.cutoff - light.outerCutoff;
+    float intensity = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
+
     // diffuse 
     vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(light.position - FragPos);
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
 
@@ -46,17 +57,13 @@ void main()
     vec3 reflectDir = reflect(-lightDir, norm);  
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
     vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
-    
-    // light attenuation
-    float distance = length(light.position - FragPos);
-    float attenuation = 1.0 / (light.constant + 
-                               light.linear * distance + 
-                               light.quadratic * (distance * distance));
-    ambient *= attenuation;
-    diffuse *= attenuation;
-    specular *= attenuation;
 
-    vec3 result = ambient + diffuse + specular;
+    // Leave ambient alone so it's always applied
+    diffuse *= intensity;
+    specular *= intensity;
+
+    result = ambient + diffuse + specular;
+
     FragColor = vec4(result, 1.0);
 }
 
