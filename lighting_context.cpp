@@ -111,6 +111,20 @@ lighting_context::lighting_context()
 
 void lighting_context::draw(float ticks)
 {
+    static glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 2.0f,  5.0f, -15.0f), 
+        glm::vec3(-1.5f, -2.2f, -2.5f),  
+        glm::vec3(-3.8f, -2.0f, -12.3f),  
+        glm::vec3( 2.4f, -0.4f, -3.5f),  
+        glm::vec3(-1.7f,  3.0f, -7.5f),  
+        glm::vec3( 1.3f, -2.0f, -2.5f),  
+        glm::vec3( 1.5f,  2.0f, -2.5f), 
+        glm::vec3( 1.5f,  0.2f, -1.5f), 
+        glm::vec3(-1.3f,  1.0f, -1.5f)  
+    };
+
+
     // Draw container
     shader->use();
     shader->setVec3("viewPos", camera.position());
@@ -118,7 +132,8 @@ void lighting_context::draw(float ticks)
     glm::vec3 lightColor;
     lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 
-    shader->setVec3("light.position", lightPos);
+    //shader->setVec3("light.position", lightPos);
+    shader->setVec3("light.direction", -0.2f, -1.0f, -0.3f);
     shader->setVec3("light.ambient",  0.2f, 0.2f, 0.2f);
     shader->setVec3("light.diffuse",  0.75f, 0.75f, 0.75f);
     shader->setVec3("light.specular", 1.0f, 1.0f, 1.0f); 
@@ -143,30 +158,31 @@ void lighting_context::draw(float ticks)
                                        (float)windowWidth / (float)windowHeight,
                                        0.1f, 100.0f);
 
-    auto model = glm::mat4(1.0f);
-    auto angle = fmod(ticks * 40.0f, 360.0f);
-    model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-
     shader->setMatrix("view", view);
     shader->setMatrix("projection", projection);
-    shader->setMatrix("model", model);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+
+    for(int i = 0; i < sizeof(cubePositions) / sizeof(cubePositions[0]); i++) {
+        auto model = glm::mat4(1.0f);
+        model = glm::translate(model, cubePositions[i]);
+
+        float angle = 20.0f * i;
+        model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+
+        shader->setMatrix("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
 
     // draw lamp
     lampShader->use();
     glBindVertexArray(lampVao);
 
-    model = glm::translate(glm::mat4(), lightPos);
+    auto model = glm::translate(glm::mat4(), lightPos);
     model = glm::scale(model, glm::vec3(0.2f));
 
     lampShader->setMatrix("view", view);
     lampShader->setMatrix("projection", projection);
     lampShader->setMatrix("model", model);
     glDrawArrays(GL_TRIANGLES, 0, 36);
-
-    textContext->drawText(0.0f, 16.0f*3.0f, 
-                          fmt::sprintf("angle: %0.2f",
-                                       angle));
 }
 
 std::shared_ptr<context> make_lighting_context()
