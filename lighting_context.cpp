@@ -20,7 +20,6 @@ class lighting_context : public context {
 
         unsigned int lampVao;
         std::shared_ptr<Shader> lampShader;
-        glm::vec3 lightPos;
     public:
         lighting_context();
         void draw(float ticks);
@@ -88,8 +87,6 @@ lighting_context::lighting_context()
                                       fmt::format("{}/lighting.fs", resDir));
     
     // Create Lamp
-    lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
-
     glGenVertexArrays(1, &lampVao);
     glBindVertexArray(lampVao);
 
@@ -124,21 +121,35 @@ void lighting_context::draw(float ticks)
         glm::vec3(-1.3f,  1.0f, -1.5f)  
     };
 
+    static glm::vec3 pointLightPositions[] = {
+        glm::vec3( 0.7f, 0.2f, 2.0f),
+        glm::vec3( 2.3f, -3.3f, -4.0f),
+        glm::vec3(-4.0f, 2.0f, -12.0f),
+        glm::vec3( 0.0f, 0.0f, -3.0f)
+    };
 
     // Draw container
     shader->use();
     shader->setVec3("viewPos", camera.position());
 
-    glm::vec3 lightColor;
-    lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    // Directional light
+    shader->setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+    shader->setVec3("dirLight.ambient",  0.1f, 0.1f, 0.1f);
+    shader->setVec3("dirLight.diffuse",  0.50f, 0.50f, 0.50f);
+    shader->setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f); 
+    
+    // Point Lights
+    shader->setInt("pointLightCount", sizeof(pointLightPositions) / sizeof(pointLightPositions[0]));
+    for(int i = 0; i < sizeof(pointLightPositions) / sizeof(pointLightPositions[0]); i++) {
+        shader->setVec3(fmt::sprintf("pointLights[%d].position", i), pointLightPositions[i]);
+        shader->setFloat(fmt::sprintf("pointLights[%d].constant", i), 1.0f);
+        shader->setFloat(fmt::sprintf("pointLights[%d].linear", i), 0.09f);
+        shader->setFloat(fmt::sprintf("pointLights[%d].quadratic", i), 0.032f);
 
-    shader->setVec3("light.position", camera.position());
-    shader->setVec3("light.direction", camera.front());
-    shader->setFloat("light.cutoff", glm::cos(glm::radians(12.5f)));
-    shader->setFloat("light.outerCutoff", glm::cos(glm::radians(17.5f)));
-    shader->setVec3("light.ambient",  0.2f, 0.2f, 0.2f);
-    shader->setVec3("light.diffuse",  0.75f, 0.75f, 0.75f);
-    shader->setVec3("light.specular", 1.0f, 1.0f, 1.0f); 
+        shader->setVec3(fmt::sprintf("pointLights[%d].ambient", i),  0.2f, 0.2f, 0.2f);
+        shader->setVec3(fmt::sprintf("pointLights[%d].diffuse", i),  0.75f, 0.75f, 0.75f);
+        shader->setVec3(fmt::sprintf("pointLights[%d].specular", i), 1.0f, 1.0f, 1.0f); 
+    }
 
     shader->setFloat("material.shininess", 64.0f);
 
@@ -178,13 +189,16 @@ void lighting_context::draw(float ticks)
     lampShader->use();
     glBindVertexArray(lampVao);
 
-    auto model = glm::translate(glm::mat4(), lightPos);
-    model = glm::scale(model, glm::vec3(0.2f));
-
     lampShader->setMatrix("view", view);
     lampShader->setMatrix("projection", projection);
-    lampShader->setMatrix("model", model);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+
+    for(int i = 0; i < sizeof(pointLightPositions) / sizeof(pointLightPositions[0]); i++) {
+        auto model = glm::translate(glm::mat4(), pointLightPositions[i]);
+        model = glm::scale(model, glm::vec3(0.2f));
+
+        lampShader->setMatrix("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
 }
 
 std::shared_ptr<context> make_lighting_context()

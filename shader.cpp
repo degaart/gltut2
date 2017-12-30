@@ -6,6 +6,7 @@
 #include <glad/glad.h>
 #include <fmt/format.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <cassert>
 
 static std::string readFile(const std::string& filename)
 {
@@ -129,17 +130,26 @@ void Shader::setBool(const std::string& name, bool value) const
 
 void Shader::setInt(const std::string& name, int value) const
 {
-    glUniform1i(glGetUniformLocation(_id, name.c_str()), (int)value);
+    int location = glGetUniformLocation(_id, name.c_str());
+    assert(location != -1);
+
+    glUniform1i(location, (int)value);
 }
 
 void Shader::setFloat(const std::string& name, float value) const
 {
-    glUniform1f(glGetUniformLocation(_id, name.c_str()), value);
+    int location = glGetUniformLocation(_id, name.c_str());
+    assert(location != -1);
+
+    glUniform1f(location, value);
 }
 
 void Shader::setMatrix(const std::string& name, const glm::mat4& value) const
 {
-    glUniformMatrix4fv(glGetUniformLocation(_id, name.c_str()),
+    int location = glGetUniformLocation(_id, name.c_str());
+    assert(location != -1);
+
+    glUniformMatrix4fv(location,
                        1,                           /* Number of matrices to send */
                        GL_FALSE,                    /* Transpose? */
                        glm::value_ptr(value));
@@ -149,7 +159,10 @@ void Shader::setMatrix(const std::string& name, const glm::mat4& value) const
 
 void Shader::setVec3(const std::string& name, float x, float y, float z) const
 {
-    glUniform3f(glGetUniformLocation(_id, name.c_str()),
+    int location = glGetUniformLocation(_id, name.c_str());
+    assert(location != -1);
+
+    glUniform3f(location,
                 x,
                 y,
                 z);
