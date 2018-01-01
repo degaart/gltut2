@@ -37,4 +37,9 @@ obj
 # Vim backup files
 *.swp
 
+# macOS junk
+.DS_Store
+
+# Build dir
+build
 
